@@ -1,26 +1,21 @@
 import React, { useState } from "react";
 
-function QuestionForm({ questions, setQuestions }) {
+function QuestionForm({ onAddQuestion }) {
   const [formData, setFormData] = useState({
     prompt: "",
     answer1: "",
     answer2: "",
     answer3: "",
     answer4: "",
-    correctIndex: 0,
+    correctIndex: "0",
   });
 
-  function handleChange(event) {
-    const { name, value } = event.target;
-
-    setFormData({
-      ...formData,
-      [name]: name === "correctIndex" ? parseInt(value) : value,
-    });
+  function handleChange(e) {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
   }
 
-  function handleSubmit(event) {
-    event.preventDefault();
+  function handleSubmit(e) {
+    e.preventDefault();
 
     const newQuestion = {
       prompt: formData.prompt,
@@ -30,7 +25,7 @@ function QuestionForm({ questions, setQuestions }) {
         formData.answer3,
         formData.answer4,
       ],
-      correctIndex: formData.correctIndex,
+      correctIndex: parseInt(formData.correctIndex, 10),
     };
 
     fetch("http://localhost:4000/questions", {
@@ -40,20 +35,10 @@ function QuestionForm({ questions, setQuestions }) {
       },
       body: JSON.stringify(newQuestion),
     })
-      .then((r) => r.json())
-      .then((savedQuestion) => {
-        setQuestions([...questions, savedQuestion]);
+      .then((res) => res.json())
+      .then((data) => {
+        onAddQuestion(data); // ✅ only call this — no setFormData
       });
-
-    // Optionally clear the form
-    setFormData({
-      prompt: "",
-      answer1: "",
-      answer2: "",
-      answer3: "",
-      answer4: "",
-      correctIndex: 0,
-    });
   }
 
   return (

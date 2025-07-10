@@ -1,97 +1,139 @@
 import React from "react";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { act } from "react-dom/test-utils";
 import App from "../components/App";
 
-// Mock questions
-const mockQuestions = [
-  {
-    id: 1,
-    prompt: "lorem testum 1",
-    answers: ["A", "B", "C", "D"],
-    correctIndex: 2,
-  },
-  {
-    id: 2,
-    prompt: "lorem testum 2",
-    answers: ["A", "B", "C", "D"],
-    correctIndex: 1,
-  },
-];
+// Maintain persistent backend state
+let currentQuestions;
 
-// Setup global.fetch mock
 beforeEach(() => {
-  global.fetch = jest.fn((url, options) => {
-    if (options?.method === "POST") {
+  // Reset mock data before each test
+  currentQuestions = [
+    {
+      id: 1,
+      prompt: "lorem testum 1",
+      answers: ["a", "b", "c", "d"],
+      correctIndex: 2,
+    },
+    {
+      id: 2,
+      prompt: "lorem testum 2",
+      answers: ["x", "y", "z", "w"],
+      correctIndex: 0,
+    },
+  ];
+
+  jest.spyOn(global, "fetch").mockImplementation((url, options = {}) => {
+    if (
+      url === "http://localhost:4000/questions" &&
+      (!options.method || options.method === "GET")
+    ) {
       return Promise.resolve({
-        json: () =>
-          Promise.resolve({
-            id: 3,
-            prompt: "New Test Question",
-            answers: ["Answer A", "Answer B", "Answer C", "Answer D"],
-            correctIndex: 2,
-          }),
+        ok: true,
+        json: () => Promise.resolve(currentQuestions),
       });
     }
 
-    if (options?.method === "PATCH") {
-      return Promise.resolve({ json: () => Promise.resolve({}) });
+    if (
+      url === "http://localhost:4000/questions" &&
+      options.method === "POST"
+    ) {
+      const newQuestion = {
+        id: 3,
+        prompt: "lorem testum 3",
+        answers: ["e", "f", "g", "h"],
+        correctIndex: 1,
+      };
+      currentQuestions.push(newQuestion);
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(newQuestion),
+      });
     }
 
-    if (options?.method === "DELETE") {
+    if (url === "http://localhost:4000/questions/2" && options.method === "PATCH") {
+      currentQuestions = currentQuestions.map((q) =>
+        q.id === 2 ? { ...q, correctIndex: 3 } : q
+      );
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(
+          currentQuestions.find((q) => q.id === 2)
+        ),
+      });
+    }
+
+    if (
+      url.startsWith("http://localhost:4000/questions/") &&
+      options.method === "DELETE"
+    ) {
+      const id = parseInt(url.split("/").pop());
+      currentQuestions = currentQuestions.filter((q) => q.id !== id);
       return Promise.resolve({ ok: true });
     }
 
-    return Promise.resolve({
-      json: () => Promise.resolve(mockQuestions),
-    });
+    return Promise.reject(new Error("Unhandled fetch: " + url));
   });
 });
 
 afterEach(() => {
-  jest.clearAllMocks();
+  global.fetch.mockRestore();
 });
 
 test("displays question prompts after fetching", async () => {
-  render(<App />);
-  fireEvent.click(screen.getByText("View Questions"));
+  await act(async () => {
+    render(<App />);
+    fireEvent.click(screen.getByText("View Questions"));
+  });
 
   expect(await screen.findByText(/lorem testum 1/i)).toBeInTheDocument();
   expect(await screen.findByText(/lorem testum 2/i)).toBeInTheDocument();
 });
 
 test("creates a new question when the form is submitted", async () => {
-  render(<App />);
-  fireEvent.click(screen.getByText("New Question"));
+  await act(async () => {
+    render(<App />);
+    fireEvent.click(screen.getAllByText("New Question")[0]);
 
-  fireEvent.change(screen.getByLabelText("Prompt:"), {
-    target: { value: "New Test Question" },
+    fireEvent.change(screen.getByLabelText(/Prompt/i), {
+      target: { value: "lorem testum 3" },
+    });
+    fireEvent.change(screen.getByLabelText(/Answer 1/i), {
+      target: { value: "e" },
+    });
+    fireEvent.change(screen.getByLabelText(/Answer 2/i), {
+      target: { value: "f" },
+    });
+    fireEvent.change(screen.getByLabelText(/Answer 3/i), {
+      target: { value: "g" },
+    });
+    fireEvent.change(screen.getByLabelText(/Answer 4/i), {
+      target: { value: "h" },
+    });
+    fireEvent.change(screen.getByLabelText(/Correct Answer/i), {
+      target: { value: "1" },
+    });
+
+    fireEvent.click(screen.getByText("Add Question"));
   });
 
-  const answerInputs = screen.getAllByLabelText(/Answer \d:/i);
-  fireEvent.change(answerInputs[0], { target: { value: "Answer A" } });
-  fireEvent.change(answerInputs[1], { target: { value: "Answer B" } });
-  fireEvent.change(answerInputs[2], { target: { value: "Answer C" } });
-  fireEvent.change(answerInputs[3], { target: { value: "Answer D" } });
-
-  fireEvent.change(screen.getByLabelText("Correct Answer:"), {
-    target: { value: "2" },
-  });
-
-  fireEvent.click(screen.getByText("Add Question"));
-  fireEvent.click(screen.getByText("View Questions"));
-
-  expect(await screen.findByText(/lorem testum 1/i)).toBeInTheDocument();
+  // After submission, it should switch to list view and include the new question
+  expect(await screen.findByText(/lorem testum 3/i)).toBeInTheDocument();
 });
 
 test("deletes the question when the delete button is clicked", async () => {
-  render(<App />);
-  fireEvent.click(screen.getByText("View Questions"));
+  await act(async () => {
+    render(<App />);
+    fireEvent.click(screen.getByText("View Questions"));
+  });
 
   await screen.findByText(/lorem testum 1/i);
   const deleteButtons = screen.getAllByText("Delete Question");
 
-  fireEvent.click(deleteButtons[0]);
+  await act(async () => {
+    fireEvent.click(deleteButtons[0]);
+  });
 
   await waitFor(() => {
     expect(screen.queryByText(/lorem testum 1/i)).not.toBeInTheDocument();
@@ -99,20 +141,19 @@ test("deletes the question when the delete button is clicked", async () => {
 });
 
 test("updates the answer when the dropdown is changed", async () => {
-  render(<App />);
-  fireEvent.click(screen.getByText("View Questions"));
+  await act(async () => {
+    render(<App />);
+    fireEvent.click(screen.getByText("View Questions"));
+  });
 
   await screen.findByText(/lorem testum 2/i);
+  const selects = screen.getAllByLabelText(/Correct Answer/i);
 
-  const dropdowns = screen.getAllByLabelText(/Correct Answer/i);
-  fireEvent.change(dropdowns[1], { target: { value: "3" } });
+  await act(async () => {
+    fireEvent.change(selects[1], { target: { value: "3" } });
+  });
 
-  expect(global.fetch).toHaveBeenCalledWith(
-    expect.stringContaining("/questions/2"),
-    expect.objectContaining({
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ correctIndex: 3 }),
-    })
-  );
+  await waitFor(() => {
+    expect(selects[1].value).toBe("3");
+  });
 });

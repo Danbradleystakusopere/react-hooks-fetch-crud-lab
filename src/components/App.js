@@ -1,51 +1,55 @@
 import React, { useState, useEffect } from "react";
-import AdminNavBar from "./AdminNavBar";
-import QuestionForm from "./QuestionForm";
 import QuestionList from "./QuestionList";
+import QuestionForm from "./QuestionForm";
 
 function App() {
-  const [page, setPage] = useState("List");
   const [questions, setQuestions] = useState([]);
+  const [view, setView] = useState("form");
 
-  // ✅ Extract fetch logic to reuse
-  function fetchQuestions(signal) {
-    fetch("http://localhost:4000/questions", { signal })
-      .then((r) => r.json())
+  useEffect(() => {
+    const controller = new AbortController();
+
+    fetch("http://localhost:4000/questions", { signal: controller.signal })
+      .then((res) => res.json())
       .then((data) => setQuestions(data))
       .catch((err) => {
         if (err.name !== "AbortError") {
           console.error("Fetch error:", err);
         }
       });
-  }
-
-  useEffect(() => {
-    const controller = new AbortController();
-    fetchQuestions(controller.signal);
 
     return () => controller.abort();
   }, []);
 
-  function handleChangePage(newPage) {
-    setPage(newPage);
+  function handleAddQuestion(newQuestion) {
+    setQuestions((prev) => [...prev, newQuestion]);
+    setView("list");
+  }
 
-    if (newPage === "List") {
-      const controller = new AbortController();
-      fetchQuestions(controller.signal);
-    }
+  function handleDeleteQuestion(id) {
+    setQuestions((prev) => prev.filter((q) => q.id !== id));
+  }
+
+  function handleUpdateQuestion(updatedQuestion) {
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === updatedQuestion.id ? updatedQuestion : q))
+    );
   }
 
   return (
     <main>
-      <AdminNavBar onChangePage={handleChangePage} />
-      {page === "Form" ? (
-        <QuestionForm
-          questions={questions}
-          setQuestions={setQuestions}
-          onChangePage={handleChangePage}
-        />
+      <nav>
+        <button onClick={() => setView("form")}>New Question</button>
+        <button onClick={() => setView("list")}>View Questions</button>
+      </nav>
+      {view === "form" ? (
+        <QuestionForm onAddQuestion={handleAddQuestion} />
       ) : (
-        <QuestionList questions={questions} setQuestions={setQuestions} />
+        <QuestionList
+          questions={questions}
+          onDelete={handleDeleteQuestion}
+          onUpdate={handleUpdateQuestion}
+        />
       )}
     </main>
   );
