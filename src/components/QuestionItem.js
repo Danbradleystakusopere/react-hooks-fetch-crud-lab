@@ -1,25 +1,36 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 
 function QuestionItem({ question, setQuestions }) {
   const { id, prompt, answers } = question;
   const [correctIndex, setCorrectIndex] = useState(question.correctIndex);
+  const isMounted = useRef(true); // ✅ Track if still mounted
 
-  // ✅ Sync internal state with prop updates
+  // ✅ Sync internal state if question prop changes
   useEffect(() => {
     setCorrectIndex(question.correctIndex);
   }, [question.correctIndex]);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   function handleDelete() {
     fetch(`http://localhost:4000/questions/${id}`, {
       method: "DELETE",
     }).then(() => {
-      setQuestions((prev) => prev.filter((q) => q.id !== id));
+      if (isMounted.current) {
+        setQuestions((prev) => prev.filter((q) => q.id !== id));
+      }
     });
   }
 
   function handleAnswerChange(e) {
     const newIndex = parseInt(e.target.value);
-    setCorrectIndex(newIndex); // ✅ Update immediately for dropdown
+    setCorrectIndex(newIndex);
+
     fetch(`http://localhost:4000/questions/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -27,9 +38,11 @@ function QuestionItem({ question, setQuestions }) {
     })
       .then((r) => r.json())
       .then((updatedQ) => {
-        setQuestions((prev) =>
-          prev.map((q) => (q.id === updatedQ.id ? updatedQ : q))
-        );
+        if (isMounted.current) {
+          setQuestions((prev) =>
+            prev.map((q) => (q.id === updatedQ.id ? updatedQ : q))
+          );
+        }
       });
   }
 

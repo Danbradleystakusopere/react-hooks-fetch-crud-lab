@@ -1,16 +1,26 @@
 {
   "questions": [
     {
-      "id": 1,
-      "prompt": "lorem testum 1",
-      "answers": ["A", "B", "C", "D"],
-      "correctIndex": 2
-    },
-    {
       "id": 2,
       "prompt": "lorem testum 2",
-      "answers": ["X", "Y", "Z", "W"],
+      "answers": [
+        "X",
+        "Y",
+        "Z",
+        "W"
+      ],
       "correctIndex": 1
+    },
+    {
+      "prompt": "Test Prompt",
+      "answers": [
+        "Test Answer 1",
+        "Test Answer 2",
+        "",
+        ""
+      ],
+      "correctIndex": 1,
+      "id": 3
     }
   ]
 }

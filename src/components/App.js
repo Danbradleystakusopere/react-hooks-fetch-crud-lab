@@ -7,10 +7,9 @@ function App() {
   const [page, setPage] = useState("List");
   const [questions, setQuestions] = useState([]);
 
-  useEffect(() => {
-    const controller = new AbortController();
-
-    fetch("http://localhost:4000/questions", { signal: controller.signal })
+  // ✅ Extract fetch logic to reuse
+  function fetchQuestions(signal) {
+    fetch("http://localhost:4000/questions", { signal })
       .then((r) => r.json())
       .then((data) => setQuestions(data))
       .catch((err) => {
@@ -18,25 +17,21 @@ function App() {
           console.error("Fetch error:", err);
         }
       });
+  }
 
-    // ✅ Cleanup to cancel fetch on unmount
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchQuestions(controller.signal);
+
     return () => controller.abort();
   }, []);
 
   function handleChangePage(newPage) {
     setPage(newPage);
 
-    // OPTIONAL: only refetch if you want to reload data when returning to List
     if (newPage === "List") {
       const controller = new AbortController();
-      fetch("http://localhost:4000/questions", { signal: controller.signal })
-        .then((r) => r.json())
-        .then((data) => setQuestions(data))
-        .catch((err) => {
-          if (err.name !== "AbortError") {
-            console.error("Fetch error:", err);
-          }
-        });
+      fetchQuestions(controller.signal);
     }
   }
 
