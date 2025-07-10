@@ -2,14 +2,14 @@
   "questions": [
     {
       "id": 1,
-      "prompt": "What special prop should always be included for lists of elements?",
-      "answers": ["id", "name", "key", "prop"],
+      "prompt": "lorem testum 1",
+      "answers": ["A", "B", "C", "D"],
       "correctIndex": 2
     },
     {
       "id": 2,
-      "prompt": "A React component is a function that returns ______.",
-      "answers": ["HTML", "JSX", "props", "state"],
+      "prompt": "lorem testum 2",
+      "answers": ["X", "Y", "Z", "W"],
       "correctIndex": 1
     },
     {
