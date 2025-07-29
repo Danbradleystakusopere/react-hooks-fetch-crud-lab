@@ -1,35 +1,16 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 
-function QuestionItem({ question, setQuestions }) {
-  const { id, prompt, answers } = question;
-  const [correctIndex, setCorrectIndex] = useState(question.correctIndex);
-  const isMounted = useRef(true); // ✅ Track if still mounted
-
-  // ✅ Sync internal state if question prop changes
-  useEffect(() => {
-    setCorrectIndex(question.correctIndex);
-  }, [question.correctIndex]);
+function QuestionItem({ question, onDelete, onUpdate }) {
+  const { id, prompt, answers, correctIndex } = question;
+  const [selectedIndex, setSelectedIndex] = useState(correctIndex);
 
   useEffect(() => {
-    isMounted.current = true;
-    return () => {
-      isMounted.current = false;
-    };
-  }, []);
-
-  function handleDelete() {
-    fetch(`http://localhost:4000/questions/${id}`, {
-      method: "DELETE",
-    }).then(() => {
-      if (isMounted.current) {
-        setQuestions((prev) => prev.filter((q) => q.id !== id));
-      }
-    });
-  }
+    setSelectedIndex(correctIndex);
+  }, [correctIndex]);
 
   function handleAnswerChange(e) {
-    const newIndex = parseInt(e.target.value);
-    setCorrectIndex(newIndex);
+    const newIndex = parseInt(e.target.value, 10);
+    setSelectedIndex(newIndex);
 
     fetch(`http://localhost:4000/questions/${id}`, {
       method: "PATCH",
@@ -37,13 +18,13 @@ function QuestionItem({ question, setQuestions }) {
       body: JSON.stringify({ correctIndex: newIndex }),
     })
       .then((r) => r.json())
-      .then((updatedQ) => {
-        if (isMounted.current) {
-          setQuestions((prev) =>
-            prev.map((q) => (q.id === updatedQ.id ? updatedQ : q))
-          );
-        }
-      });
+      .then((updatedQuestion) => onUpdate(updatedQuestion));
+  }
+
+  function handleDeleteClick() {
+    fetch(`http://localhost:4000/questions/${id}`, {
+      method: "DELETE",
+    }).then(() => onDelete(id));
   }
 
   return (
@@ -51,7 +32,7 @@ function QuestionItem({ question, setQuestions }) {
       <h4>{prompt}</h4>
       <label>
         Correct Answer:
-        <select value={correctIndex} onChange={handleAnswerChange}>
+        <select value={selectedIndex} onChange={handleAnswerChange}>
           {answers.map((answer, index) => (
             <option key={index} value={index}>
               {answer}
@@ -59,7 +40,7 @@ function QuestionItem({ question, setQuestions }) {
           ))}
         </select>
       </label>
-      <button onClick={handleDelete}>Delete Question</button>
+      <button onClick={handleDeleteClick}>Delete Question</button>
     </li>
   );
 }

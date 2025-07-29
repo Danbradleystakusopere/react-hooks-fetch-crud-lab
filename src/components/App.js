@@ -1,17 +1,18 @@
 import React, { useState, useEffect } from "react";
 import QuestionList from "./QuestionList";
 import QuestionForm from "./QuestionForm";
+import AdminNavBar from "./AdminNavBar";
 
 function App() {
   const [questions, setQuestions] = useState([]);
-  const [view, setView] = useState("form");
+  const [page, setPage] = useState("List"); // default to List for tests
 
   useEffect(() => {
     const controller = new AbortController();
 
     fetch("http://localhost:4000/questions", { signal: controller.signal })
       .then((res) => res.json())
-      .then((data) => setQuestions(data))
+      .then(setQuestions)
       .catch((err) => {
         if (err.name !== "AbortError") {
           console.error("Fetch error:", err);
@@ -23,7 +24,7 @@ function App() {
 
   function handleAddQuestion(newQuestion) {
     setQuestions((prev) => [...prev, newQuestion]);
-    setView("list");
+    setPage("List");
   }
 
   function handleDeleteQuestion(id) {
@@ -38,11 +39,8 @@ function App() {
 
   return (
     <main>
-      <nav>
-        <button onClick={() => setView("form")}>New Question</button>
-        <button onClick={() => setView("list")}>View Questions</button>
-      </nav>
-      {view === "form" ? (
+      <AdminNavBar onChangePage={setPage} />
+      {page === "Form" ? (
         <QuestionForm onAddQuestion={handleAddQuestion} />
       ) : (
         <QuestionList

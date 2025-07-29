@@ -1,26 +1,26 @@
 {
   "questions": [
     {
-      "id": 2,
-      "prompt": "lorem testum 2",
+      "prompt": "What is testing?",
       "answers": [
-        "X",
-        "Y",
-        "Z",
-        "W"
-      ],
-      "correctIndex": 1
-    },
-    {
-      "prompt": "Test Prompt",
-      "answers": [
-        "Test Answer 1",
-        "Test Answer 2",
-        "Test Answer 3",
-        "Test Answer 4"
+        "Debugging",
+        "Writing tests",
+        "Linting",
+        "Building"
       ],
       "correctIndex": 1,
-      "id": 3
+      "id": 4
+    },
+    {
+      "prompt": "What is testing?",
+      "answers": [
+        "Debugging",
+        "Writing tests",
+        "Linting",
+        "Building"
+      ],
+      "correctIndex": 1,
+      "id": 5
     }
   ]
 }

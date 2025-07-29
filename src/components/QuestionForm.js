@@ -37,7 +37,7 @@ function QuestionForm({ onAddQuestion }) {
     })
       .then((res) => res.json())
       .then((data) => {
-        onAddQuestion(data); // ✅ only call this — no setFormData
+        onAddQuestion(data);
       });
   }
 
@@ -97,10 +97,10 @@ function QuestionForm({ onAddQuestion }) {
             value={formData.correctIndex}
             onChange={handleChange}
           >
-            <option value="0">{formData.answer1}</option>
-            <option value="1">{formData.answer2}</option>
-            <option value="2">{formData.answer3}</option>
-            <option value="3">{formData.answer4}</option>
+            <option value="0">{formData.answer1 || "Answer 1"}</option>
+            <option value="1">{formData.answer2 || "Answer 2"}</option>
+            <option value="2">{formData.answer3 || "Answer 3"}</option>
+            <option value="3">{formData.answer4 || "Answer 4"}</option>
           </select>
         </label>
         <button type="submit">Add Question</button>
